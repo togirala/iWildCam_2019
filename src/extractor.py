@@ -32,12 +32,8 @@ train_df = get_time_df(train_df)
 test_df = get_time_df(test_df)
 
 
-print(train_df.head())
 
 
-
-# if __name__ == '__main__':
-#     pass
 
 
 
