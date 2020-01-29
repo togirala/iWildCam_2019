@@ -1,14 +1,17 @@
 import os
-import cv2
-import math
+# import cv2
+# import math
 
-from PIL import Image
+# from PIL import Image
+
+import pandas as pd
+import numpy as np
 
 
+data_dir = 'data/'
 
-
-train_df = pd.read_csv(os.path.join(train_dir, 'train.csv'))
-test_df = pd.read_csv(os.path.join(test_dir, 'test.csv'))
+train_df = pd.read_csv(os.path.join(data_dir, 'train.csv'))
+test_df = pd.read_csv(os.path.join(data_dir, 'test.csv'))
 
 
 
@@ -28,6 +31,17 @@ def get_time_df(df):
 train_df = get_time_df(train_df)
 test_df = get_time_df(test_df)
 
+
+print(train_df.head())
+
+
+
+# if __name__ == '__main__':
+#     pass
+
+
+
+'''
 
 
 from torchvision import models
@@ -313,7 +327,7 @@ with open('submission.csv', 'w') as submissionFile:
 
 
 
-
+'''
 
 
 
