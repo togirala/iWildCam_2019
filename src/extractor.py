@@ -55,28 +55,7 @@ test_df = get_time_df(test_df)
 '''
 
 
-from torchvision import models
-import torch.nn.functional as F
-import torch.optim as optim
-import torch.nn as nn
-import torch
 
-
-class SimpleConv(nn.Module):
-    def __init__(self, num_categories, len_dense, weighs):
-        super(SimpleConv, self).__init__()
-        self.model_conv = models.resnet152(pretrained=False)
-        if weighs:
-            self.model_conv.load_state_dict(torch.load(weighs))
-        self.model_conv.fc = nn.Linear(self.model_conv.fc.in_features, num_categories)
-        self.model_dense = nn.Linear(len_dense, num_categories)
-        self.model = nn.Linear(2*num_categories, num_categories)
-    
-    def forward(self, x, y):
-        x1 = self.model_conv(x)
-        x2 = self.model_dense(y)
-        x = F.relu(torch.cat((x1, x2), 1))
-        return self.model(x)
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
