@@ -8,28 +8,47 @@ import pandas as pd
 import numpy as np
 
 
-data_dir = 'data/'
+def get_data():
+    try:
+        data_dir = 'data/'
+        train_df = pd.read_csv(os.path.join(data_dir, 'train.csv'))
+        test_df = pd.read_csv(os.path.join(data_dir, 'test.csv'))
+    except Exception as e:
+        print(f'Exception: {e}')  
+          
+    return train_df, test_df
 
-train_df = pd.read_csv(os.path.join(data_dir, 'train.csv'))
-test_df = pd.read_csv(os.path.join(data_dir, 'test.csv'))
 
-
-
-def get_time_df(df):
+def get_time_df(df):        
     try:
         df['date_time'] = pd.to_datetime(df['date_captured'], errors='coerce')
         df["month"] = df['date_time'].dt.month - 1
         df["hour"] = df['date_time'].dt.hour
-    except Exception as ex:
-        print("Exception:".format(ex))
+    except Exception as e:
+        print(f'Exception: {e}')
+        
     df.loc[np.isfinite(df['hour']) == False, ['month', 'hour']] = 0
     df['hour'] = df['hour'].astype(int)
     df['month'] = df['month'].astype(int)
+    
     return df
 
 
+
+train_df, test_df = get_data()
+
 train_df = get_time_df(train_df)
 test_df = get_time_df(test_df)
+
+
+# print(train_df.head(10))
+
+
+
+
+
+
+
 
 
 
