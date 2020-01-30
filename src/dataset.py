@@ -2,14 +2,16 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import pandas as pd
 import numpy as np
-import warnings
-warnings.filterwarnings("ignore")
 import torch
 import os
-import io
-from PIL import Image
-from imread import imread
+# from imread import imread
 from sklearn import preprocessing
+from skimage import io, transform
+from PIL import Image
+
+
+import warnings
+warnings.filterwarnings("ignore")
 
 
 ## Based on guidelines from: https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
@@ -46,7 +48,10 @@ class PlaceTimeDataset(Dataset):
 
         label = self.df.category_id[idx]
         img_name = os.path.join(self.root_dir, self.df.file_name[idx])
-        image = imread(img_name)        
+        image = io.imread(img_name) 
+        # image = Image.open(img_name).convert('RGB')  
+        # print(type(image))
+               
         
         '''
         ### One hot encoding for categorical variables###
@@ -69,7 +74,7 @@ class PlaceTimeDataset(Dataset):
         hour = np.squeeze(np.asarray(ohe.transform(hours).todense()[hour - 1,:]))
         '''
         
-        ### shortcut implementation for ohe
+        ### shortcut implementation for ohe  -- next 3 lines
         location = np.eye(139)[self.df.location.tolist()]
         month = np.eye(12)[self.df.month.tolist()]
         hour = np.eye(24)[self.df.hour.tolist()]
@@ -80,17 +85,158 @@ class PlaceTimeDataset(Dataset):
             sample = self.transform(sample)
 
         return sample
+        # return image, month, hour, location, label
+           
+           
+           
+class Rescale(object):
+    """Rescale the image in a sample to a given size.
+
+    Args:
+        output_size (tuple or int): Desired output size. If tuple, output is
+            matched to output_size. If int, smaller of image edges is matched
+            to output_size keeping aspect ratio the same.
+    """
+
+    def __init__(self, output_size):
+        assert isinstance(output_size, (int, tuple))
+        self.output_size = output_size
+        # self.output_size = 747
+        
+
+    def __call__(self, sample):
+        image, location, month, hour = sample['image'], sample['location'], sample['month'], sample['hour']
+
+        h, w = image.shape[:2]
+        if isinstance(self.output_size, int):
+            if h > w:
+                new_h, new_w = self.output_size * h / w, self.output_size
+            else:
+                new_h, new_w = self.output_size, self.output_size * w / h
+        else:
+            new_h, new_w = self.output_size
+
+        new_h, new_w = int(new_h), int(new_w)
+
+        imgage = transform.resize(image, (new_h, new_w))
+
+        ### no landmarks to resize
+        # h and w are swapped for landmarks because for images,
+        # x and y axes are axis 1 and 0 respectively
+        # landmarks = landmarks * [new_w / w, new_h / h]
+
+
+        return {'image': image, 'month': month, 'hour': hour, 'location': location}          
+           
+           
+           
+class ToTensor(object):
+    """Convert ndarrays in sample to Tensors."""
+
+    def __call__(self, sample):
+        image, location, month, hour = sample['image'], sample['location'], sample['month'], sample['hour']
+
+        # swap color axis because
+        # numpy image: H x W x C
+        # torch image: C X H X W
+        image = image.transpose((2, 0, 1))
+        return {'image': torch.from_numpy(image),
+                'location': torch.from_numpy(location),
+                'month': torch.from_numpy(month),
+                'hour': torch.from_numpy(hour)
+                }
+
+# train_dataset = PlaceTimeDataset(csv_file='data/train.csv', root_dir='data/train/')     
+
+
+
+
+# train_transforms = transforms.Compose([Rescale(256),ToTensor()])
+
+
+
+
+
+# data_transform = transforms.Compose([
+#         # Rescale(224),
+#         transforms.Resize((747, 1024)),
+#         transforms.RandomSizedCrop(224),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
+#                              std=[0.229, 0.224, 0.225])
+#     ])
+
+
+
+
+data_transforms = {
+    'train': transforms.Compose([
+        # transforms.ToPILImage(),
+        transforms.Resize((747, 1024)),
+        transforms.RandomSizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(20),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+    'test': transforms.Compose([
+        transforms.Resize(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+}
+
+
+
+
+train_dataset = PlaceTimeDataset(csv_file='data/train.csv', root_dir='data/train/', transform=data_transforms['train'])
+
+
+        
+        
+dataloader = DataLoader(train_dataset, batch_size=4,
+                        shuffle=True, num_workers=4)   
+           
+           
+           
+           
+           
+
+for i_batch, sample_batched in enumerate(dataloader):
+    print(i_batch, sample_batched['image'].size(),
+          sample_batched['location'].size())
+    
+
+
+         
+           
+           
+# import torch
+# from torchvision import transforms, datasets
+
+# data_transform = transforms.Compose([
+#         transforms.RandomSizedCrop(224),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
+#                              std=[0.229, 0.224, 0.225])
+#     ])
+              
+           
+           
+           
            
         
-train_dataset = PlaceTimeDataset(csv_file='data/train.csv', root_dir='data/train/')     
+
         
-for i in range(len(train_dataset)):
-    sample = train_dataset[i]
-    # time = sample['time']
-    location = sample['location']
-    label = sample['label']
-    month = sample['month']
-    hour = sample['hour']
+# for i in range(len(train_dataset)):
+#     sample = train_dataset[i]
+#     # time = sample['time']
+#     location = sample['location']
+#     label = sample['label']
+#     month = sample['month']
+#     hour = sample['hour']
 
     # print(i, sample['image'].shape, sample['month'], sample['hour'], sample['location'], sample['label'])  
     
@@ -99,7 +245,7 @@ for i in range(len(train_dataset)):
     
     
     
-    break     
+    # break     
 
 
 
