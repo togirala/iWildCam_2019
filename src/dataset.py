@@ -229,9 +229,6 @@ train_sampler = SubsetRandomSampler(train_indices)
 # test_loader = torch.utils.data.DataLoader(test_ds, batch_size=512)
 test_loader = torch.utils.data.DataLoader(test_ds, batch_size=512)
 
-
-
-
 ##################################
 
 
