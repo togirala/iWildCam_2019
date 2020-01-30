@@ -1,21 +1,20 @@
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
+from torch.utils.data.dataset import random_split
+from torchvision import transforms
 import pandas as pd
 import numpy as np
 import torch
 import os
-# from imread import imread
-from sklearn import preprocessing
+# from sklearn import preprocessing
 from skimage import io, transform
 from skimage.color import gray2rgb
-from PIL import Image
 
 
 import warnings
 warnings.filterwarnings("ignore")
 
-
 '''Based on guidelines from: https://pytorch.org/tutorials/beginner/data_loading_tutorial.html'''
+
 class PlaceTimeDataset(Dataset):
     ''' Location and Time with image dataset '''
 
@@ -153,7 +152,7 @@ class ToTensor(object):
                 }
 
 
-def get_dataset():
+def get_train_valid_dataset():
         
     data_transforms = {
         'train': transforms.Compose([
@@ -172,23 +171,24 @@ def get_dataset():
         ])
     }
 
-
     train_dataset = PlaceTimeDataset(csv_file='data/train.csv', root_dir='data/train/', transform=data_transforms['train'])
-
-    # for i_batch, sample_batched in enumerate(train_dataset):
-    #     print(i_batch, sample_batched['image'].shape, sample_batched['location'].shape, sample_batched['month'].shape, sample_batched['hour'].shape, sample_batched['label'])
-    #     if i_batch >= 1000:
-    #         break
+    
+    ## Split data to train and validation set
+    train_valid_split = [int(len(train_dataset)*0.8), len(train_dataset) - int(len(train_dataset)*0.8)]  
+    train_set, valid_set = random_split(train_dataset, train_valid_split)
+    
         
-        
-    dataloader = DataLoader(train_dataset, batch_size=10, shuffle=True, num_workers=6)   
+    '''
+    #### To validate dataloader -- for debugging    ####
+    dataloader = DataLoader(train_set, batch_size=10, shuffle=True, num_workers=6)   
 
     for i_batch, sample_batched in enumerate(dataloader):
         print(i_batch, sample_batched['image'].shape, sample_batched['location'].shape, sample_batched['month'].shape, sample_batched['hour'].shape, sample_batched['label'])
         if i_batch == 10:
-            break 
+            break
+    '''
     
-       
+    return train_set, valid_set
        
        
         
@@ -245,4 +245,4 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=512)
 
 
 if __name__ == '__main__':
-    get_dataset()
+    get_train_valid_dataset()
