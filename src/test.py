@@ -20,7 +20,7 @@ import io
 from PIL import Image
 from imread import imread
 
-
+train_dir = 'data/'
 def get_data():
     try:
         data_dir = 'data/'
@@ -76,8 +76,15 @@ class SimpleDataset(Dataset):
         self.y = np.array(df.get('category_id', []))
 #         self.y = np.eye(n_category)[category_ids]
         month = np.eye(12)[df.month.tolist()]
+
         hours = np.eye(24)[df.hour.tolist()]
+        
+        
+        print(month, hours)
+        print('-------------')
         self.time = np.concatenate((month, hours), axis=1)
+        print(self.time)
+        print('------')
     
     def __len__(self):
         return len(self.df)
@@ -91,6 +98,7 @@ class SimpleDataset(Dataset):
             label = 0
         image = Image.open(img_name).convert('RGB')
         time = torch.from_numpy(self.time[index]).float()
+        print(time)
         
         if self.transform:
             image = self.transform(image)
@@ -128,12 +136,15 @@ data_transforms = {
 
 ####################
 
-train_ds = SimpleDataset(os.path.join(train_dir, 'train_images'), train_df, n_category=23, transform=data_transforms['train'])
-test_ds = SimpleDataset(os.path.join(train_dir, 'test_images'), test_df, n_category=23, transform=data_transforms['test'])
+train_ds = SimpleDataset(os.path.join(train_dir, 'train'), train_df, n_category=23)
+test_ds = SimpleDataset(os.path.join(train_dir, 'test'), test_df, n_category=23, transform=data_transforms['test'])
 
 for i in range(len(train_ds)):
-    sample = train_dataset[i]
+    sample = train_ds[i]
+    # print(sample)
+    # print(sample.shape)
+
     
 
-    print(i, sample['image'].shape, sample['time'].shape, sample['label'].shape)  
+    # print(i, sample['image'].shape, sample['time'].shape, sample['label'].shape)  
     break    
