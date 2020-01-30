@@ -189,9 +189,6 @@ def get_dataset():
         if i_batch == 100:
             break 
     
-    
-
-
        
        
        
