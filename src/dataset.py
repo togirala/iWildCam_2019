@@ -26,10 +26,7 @@ class PlaceTimeDataset(Dataset):
         '''
         self.df = pd.read_csv(csv_file)
         self.root_dir = root_dir    ## 'data/'
-        self.transform = transform  
-        # self.time = None 
-        # self.location = None
-            
+        self.transform = transform             
         
     def __len__(self):
         return len(self.df)
@@ -48,42 +45,42 @@ class PlaceTimeDataset(Dataset):
         self.df['month'] = self.df['month'].astype(int)  
 
         label = self.df.category_id[idx]
-        month = self.df.month[idx]
-        hour = self.df.hour[idx]
-        location = self.df.location[idx]
-        # print(label)
-        
-        
-        
-        
-        # month = np.eye(12)[self.df.month.tolist()]
-        # hours = np.eye(24)[self.df.hour.tolist()]
-        # time = np.concatenate((month, hours), axis=1)
-        
-        
         img_name = os.path.join(self.root_dir, self.df.file_name[idx])
-        image = imread(img_name)
+        image = imread(img_name)        
         
+        '''
+        ### One hot encoding for categorical variables###
+        # month = self.df.month[idx]
+        # hour = self.df.hour[idx]
+        # location = self.df.location[idx]
         
-        # image = Image.open(img_name).convert('RGB')
-        # time = torch.from_numpy(self.time[index]).float()
+        ohe = preprocessing.OneHotEncoder()
         
+        locations = np.array(list(set(self.df.location.values))).reshape(-1,1)   
+        ohe.fit(locations)
+        location = np.squeeze(np.asarray(ohe.transform(locations).todense()[location - 1,:]))
         
+        months = np.array(list(set(self.df.month.values))).reshape(-1,1)   
+        ohe.fit(months)
+        month = np.squeeze(np.asarray(ohe.transform(months).todense()[month - 1,:]))
         
-        # landmarks = self.df.iloc[idx, 1:]
+        hours = np.array(list(set(self.df.hour.values))).reshape(-1,1)    
+        ohe.fit(hours) 
+        hour = np.squeeze(np.asarray(ohe.transform(hours).todense()[hour - 1,:]))
+        '''
         
+        ### shortcut implementation for ohe
+        location = np.eye(139)[self.df.location.tolist()]
+        month = np.eye(12)[self.df.month.tolist()]
+        hour = np.eye(24)[self.df.hour.tolist()]
         
-        
-        # landmarks = np.array([landmarks])
-        # landmarks = landmarks.astype('float').reshape(-1, 2)
         sample = {'image': image, 'month': month, 'hour': hour, 'location': location, 'label': label}
 
         if self.transform:
             sample = self.transform(sample)
 
         return sample
-        
-        
+           
         
 train_dataset = PlaceTimeDataset(csv_file='data/train.csv', root_dir='data/train/')     
         
@@ -92,11 +89,13 @@ for i in range(len(train_dataset)):
     # time = sample['time']
     location = sample['location']
     label = sample['label']
+    month = sample['month']
+    hour = sample['hour']
 
-    print(i, sample['image'].shape, sample['month'], sample['hour'], sample['location'], sample['label'])  
+    # print(i, sample['image'].shape, sample['month'], sample['hour'], sample['location'], sample['label'])  
     
-    # print(label)
-    
+
+
     
     
     
