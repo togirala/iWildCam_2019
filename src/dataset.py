@@ -153,7 +153,6 @@ class ToTensor(object):
                 }
 
 
-
 def get_dataset():
         
     data_transforms = {
@@ -182,11 +181,11 @@ def get_dataset():
     #         break
         
         
-    dataloader = DataLoader(train_dataset, batch_size=10, shuffle=True, num_workers=4)   
+    dataloader = DataLoader(train_dataset, batch_size=10, shuffle=True, num_workers=6)   
 
     for i_batch, sample_batched in enumerate(dataloader):
         print(i_batch, sample_batched['image'].shape, sample_batched['location'].shape, sample_batched['month'].shape, sample_batched['hour'].shape, sample_batched['label'])
-        if i_batch == 100:
+        if i_batch == 10:
             break 
     
        
@@ -202,75 +201,6 @@ def get_dataset():
         
 '''
         
-
-    ###################
-
-    def __init__(self, folder, df, n_category, transform=None):
-        self.transform = transform
-        self.root_dir = folder
-        self.df = df
-        self.y = np.array(df.get('category_id', []))
-#         self.y = np.eye(n_category)[category_ids]
-        month = np.eye(12)[df.month.tolist()]
-        hours = np.eye(24)[df.hour.tolist()]
-        self.time = np.concatenate((month, hours), axis=1)
-    
-    def __len__(self):
-        return len(self.df)
-    
-    
-    def __getitem__(self, index):
-        img_name = os.path.join(self.root_dir, self.df.file_name[index])
-        image = Image.open(img_name)
-        if len(self.y):
-            label = self.y[index]
-        else:
-            label = 0
-        image = Image.open(img_name).convert('RGB')
-        time = torch.from_numpy(self.time[index]).float()
-        
-        if self.transform:
-            image = self.transform(image)
-        return image, time, label, self.df.id[index]
-
-
-
-
-
-
-
-
-
-###################
-
-
-
-from torchvision import transforms
-
-data_transforms = {
-    'train': transforms.Compose([
-        transforms.Resize((150, 150)),
-        transforms.RandomResizedCrop((128, 128)),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'test': transforms.Compose([
-        transforms.Resize((128, 128)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
-
-
-####################
-
-train_ds = SimpleDataset(os.path.join(train_dir, 'train_images'), train_df, n_category=23, transform=data_transforms['train'])
-test_ds = SimpleDataset(os.path.join(train_dir, 'test_images'), test_df, n_category=23, transform=data_transforms['test'])
-
-
-
-#############
 
 
 batch_size = 256
