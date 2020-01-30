@@ -239,7 +239,5 @@ test_loader = torch.utils.data.DataLoader(test_ds, batch_size=512)
 
 
 
-
-
 if __name__ == '__main__':
     get_dataset()
