@@ -190,59 +190,7 @@ def get_train_valid_dataset():
     
     return train_set, valid_set
        
-       
-        
 
 
-
-
-
-
-        
-'''
-        
-
-
-batch_size = 256
-
-data_size = len(train_ds)
-validation_fraction = .2
-
-indices = list(range(data_size))
-data_size = len(indices)
-val_split = int(np.floor((validation_fraction) * data_size))
-
-np.random.seed(42)
-np.random.shuffle(indices)
-
-val_indices, train_indices = indices[:val_split], indices[val_split:]
-
-train_sampler = SubsetRandomSampler(train_indices)
-val_sampler = SubsetRandomSampler(val_indices)
-
-train_loader = torch.utils.data.DataLoader(train_ds, batch_size=batch_size, 
-                                           sampler=train_sampler)
-val_loader = torch.utils.data.DataLoader(train_ds, batch_size=batch_size,
-                                         sampler=val_sampler)
-# Notice that we create test data loader in a different way. We don't have the labels
-train_sampler = SubsetRandomSampler(train_indices)
-# test_loader = torch.utils.data.DataLoader(test_ds, batch_size=512)
-test_loader = torch.utils.data.DataLoader(test_ds, batch_size=512)
-
-##################################
-
-
-
-
-
-
-'''
-
-
-
-
-
-
-
-if __name__ == '__main__':
-    get_train_valid_dataset()
+# if __name__ == '__main__':
+#     get_train_valid_dataset()
