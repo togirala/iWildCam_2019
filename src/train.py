@@ -12,42 +12,25 @@ import cnn_models
 def loss_fn():
     return nn.CrossEntropyLoss()
 
-def train_loop(device = 'cuda'):
-    ### model, train_loader, val_loader, loss, optimizer, num_epochs
-    model = cnn_models.FirstModel()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    criterion = loss_fn()
+def train_loop(model, optimizer, criterion, train_loader, device, epochs):
+    model.train()
     
-    
-    ###  Import Dataset ###
-    train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=10, shuffle=True) 
-
-    # for i, train_batch in enumerate(train_loader):
-    #     print(train_batch['image'].shape)
-    #     break
-    
-    for epoch in range(5):
+    for epoch in range(epochs):
         running_loss = 0.0
+        correct = 0
+        total = 0
         
-        for idx, training_batch in enumerate(train_loader):
-            '''### data in form sample = {'image': image, 'month': month[idx], 'hour': hour[idx], 'location': location[idx], 'label': label} ###'''
+        for batch_idx, training_batch in enumerate(train_loader):
+            '''### data in form sample = {'image': image, 'features': features, 'label': label} ###'''
             image = training_batch['image']
-            month = training_batch['month']
-            hour = training_batch['hour']
-            location = training_batch['location']
+            features = training_batch['features']
             labels = training_batch['label']
             
-            
             image = image.to(device)
-            month = month.to(device)
-            hour = hour.to(device)
-            location = location.to(device)
+            features = features.to(device)
             labels = labels.to(device)
             model = model.to(device)
-            
-            features = torch.cat((month, hour, location), dim = 1)
-
+                        
             ### Zero the parameter gradients
             optimizer.zero_grad()
             
@@ -65,111 +48,119 @@ def train_loop(device = 'cuda'):
             
             running_loss += loss.item()
             
+            # print(loss.item())
+            _, predicted = torch.max(preds.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            
+        training_loss_epoch = running_loss / batch_idx
+        print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {100*correct/total}')
+        
+        eval_loop(model = model, 
+                  valid_loader = valid_loader,
+                  device = device) 
 
-
-
-
-
-def train():
     
-    ### model, train_loader, val_loader, loss, optimizer, num_epochs
+
+    
+
+def eval_loop(model, valid_loader, device):
+    
+    model.eval()  
+    '''model.eval() will notify all your layers that you are in eval mode, that way, batchnorm or dropout layers will work in eval mode instead of training mode.'''
+    correct = 0
+    total = 0
+        
+    # Validation loop
+    for batch_idx, validation_batch in enumerate(valid_loader): 
+    # ''' ### data in form sample = {'image': image, 'features': features, 'label': label} ### ''' 
+   
+        
+        with torch.no_grad():
+        # '''
+        # torch.no_grad() impacts the autograd engine and deactivate it. 
+        # It will reduce memory usage and speed up computations but you won’t be able to backprop (which you don’t want in an eval script)
+        # '''
+            
+            image = validation_batch['image']
+            features = validation_batch['features']
+            labels = validation_batch['label']
+            
+            image = image.to(device)
+            features = features.to(device)
+            labels = labels.to(device)
+            model = model.to(device)
+            
+            preds = model(image, features)
+            
+            _, predicted = torch.max(preds.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            
+            # val_pred = np.append(val_pred, self.get_vector(y_pred.detach().cpu().numpy()))
+            # loss = loss_fn(preds, self.get_vector(y_batch))
+            # avg_val_loss += loss.item() / len(val_loader)
+            
+    print(f'validation accuracy = {100*correct/total}')
+
+    ##### Model Checkpoint for best validation f1
+    # val_f1 = self.calculate_metrics(train_targets[val_index], val_pred, f1_only=True)
+    # if val_f1 > best_val_f1:
+    #     prev_best_val_f1 = best_val_f1
+    #     best_val_f1 = val_f1
+    #     torch.save(model.state_dict(), self.PATHS['xlm'])
+    #     evaluated_epoch = epoch
+
+    # # Calc the metrics
+    # self.save_metrics(train_targets[train_index], train_pred, avg_loss, 'train')
+    # self.save_metrics(train_targets[val_index], val_pred, avg_val_loss, 'val')
+    
+    
+def train():    
     
     ###  Import Dataset ###
-    # train_set, valid_set = dataset.get_train_valid_dataset()
-    # train_loader = DataLoader(train_set, batch_size=10, shuffle=True) 
+    train_set, valid_set = dataset.get_train_valid_dataset()
+    train_loader = DataLoader(train_set, batch_size=10, shuffle=True) 
+    
+    
+    model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = loss_fn()
+    
+    
+    train_loop(model, optimizer, criterion, train_loader, device='cuda', epochs=5)
+    
 
-    # for i, train_batch in enumerate(train_loader):
-    #     print(train_batch['image'].shape)
-    #     break
-    
-    
-    train_loop()
-    
 
-    
 
-    
-    
-    
-    
-    
+
 '''
 
 
-
-
-class SimpleConv(nn.Module):
-    def __init__(self, num_categories, len_dense, weighs):
-        super(SimpleConv, self).__init__()
-        self.model_conv = models.resnet152(pretrained=False)
-        if weighs:
-            self.model_conv.load_state_dict(torch.load(weighs))
-        self.model_conv.fc = nn.Linear(self.model_conv.fc.in_features, num_categories)
-        self.model_dense = nn.Linear(len_dense, num_categories)
-        self.model = nn.Linear(2*num_categories, num_categories)
+def compute_accuracy(model, loader):
+    model.eval() 
+    correct = 0
+    total = 0
+    predictions = np.empty(shape=len(val_sampler)).astype(int)
+    ground_truth = np.empty(shape=len(val_sampler)).astype(int)
     
-    def forward(self, x, y):
-        x1 = self.model_conv(x)
-        x2 = self.model_dense(y)
-        x = F.relu(torch.cat((x1, x2), 1))
-        return self.model(x)
-
-
-
-
-
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-simple_conv = SimpleConv(23, 12+24, '../input/resnet152/resnet152.pth')
-simple_conv = simple_conv.to(device)
-
-
-def train_model(model, train_loader, val_loader, loss, optimizer, num_epochs):    
-    loss_history = []
-    train_history = []
-    val_history = []
-    best_acc = 0.0
-    best_model_wts = copy.deepcopy(model.state_dict())
-    
-    for epoch in range(num_epochs):
-        model.train() # Enter train mode
-        
-        loss_accum = 0
-        correct_samples = 0
-        total_samples = 0
-
-        for i_step, (x1, x2, y, _) in enumerate(train_loader):
-          x1 ==> image
-          x2 ==> time
+    with torch.no_grad():
+        for i,(x1, x2, y, _) in enumerate(loader):
+            begin = i*batch_size
             x1_gpu = x1.to(device)
             x2_gpu = x2.to(device)
             y_gpu = y.to(device)
             
-            prediction = model(x1_gpu, x2_gpu)    
-            loss_value = loss(prediction, y_gpu)
-            optimizer.zero_grad()
-            loss_value.backward()
-            optimizer.step()
-            _, indices = torch.max(prediction, 1)
-            correct_samples += torch.sum(indices == y_gpu)
-            total_samples += y.shape[0]
-            
-            loss_accum += loss_value
-#             print('{}/{}'.format(i_step, len(train_loader)))
-
-        ave_loss = loss_accum / i_step
-        train_accuracy = float(correct_samples) / total_samples
-        val_f1, val_accuracy = compute_accuracy(model, val_loader)
-        
-        loss_history.append(float(ave_loss))
-        train_history.append(train_accuracy)
-        val_history.append(val_accuracy)
-        
-        print("Average loss: %f, Train accuracy: %f, Val accuracy: %f val F1: %f" % (ave_loss, train_accuracy, val_accuracy, val_f1))
-        if val_f1 > best_acc:
-            best_acc = val_f1
-            best_model_wts = copy.deepcopy(model.state_dict())
-            
-    return loss_history, train_history, val_history, best_model_wts
+            outputs = model(x1_gpu, x2_gpu)
+            _, predicted = torch.max(outputs.data, 1)
+            total += y_gpu.size(0)
+            correct += (predicted == y_gpu).sum().item()
+#             print(predictions.shape, np.array(predicted.cpu()).shape)
+#             print(begin, len(predictions), min(begin+batch_size, len(predictions)))
+            predictions[begin : min(begin+batch_size, len(predictions))] = np.array(predicted.cpu())
+            ground_truth[begin : min(begin+batch_size, len(ground_truth))] = np.array(y_gpu.cpu())
+        val_f1 = f1_score(predictions, ground_truth, average='macro')
+    return val_f1, correct / total
 
 '''
 
