@@ -12,7 +12,7 @@ import cnn_models
 def loss_fn():
     return nn.CrossEntropyLoss()
 
-def train_loop(model, optimizer, criterion, train_loader, device, epochs):
+def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, epochs):
     model.train()
     
     for epoch in range(epochs):
@@ -120,7 +120,8 @@ def train():
     
     ###  Import Dataset ###
     train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=10, shuffle=True) 
+    train_loader = DataLoader(train_set, batch_size=10, shuffle=True)
+    valid_loader = DataLoader(valid_set, batch_size=100, shuffle=True) 
     
     
     model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')
@@ -128,7 +129,15 @@ def train():
     criterion = loss_fn()
     
     
-    train_loop(model, optimizer, criterion, train_loader, device='cuda', epochs=5)
+    train_loop(
+            model = model, 
+            optimizer = optimizer, 
+            criterion = criterion, 
+            train_loader = train_loader, 
+            valid_loader = valid_loader, 
+            device = 'cuda', 
+            epochs = 5
+            )
     
 
 
