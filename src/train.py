@@ -60,7 +60,7 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
                   valid_loader = valid_loader,
                   device = device) 
 
-    
+    torch.save(model.state_dict(), 'models/FirstModel.pth')    
 
     
 
@@ -120,7 +120,7 @@ def train():
     
     ###  Import Dataset ###
     train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=10, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=40, shuffle=True)
     valid_loader = DataLoader(valid_set, batch_size=100, shuffle=True) 
     
     

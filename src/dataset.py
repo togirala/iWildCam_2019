@@ -157,7 +157,8 @@ def get_train_valid_dataset():
     data_transforms = {
         'train': transforms.Compose([
             transforms.ToPILImage(mode = 'RGB'),
-            transforms.Resize((600, 822)),
+            transforms.Resize((256)),    ### for optimiuzation
+            # transforms.Resize((600, 822)),    ##  good resolution images
             # transforms.RandomSizedCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.RandomRotation(20),
