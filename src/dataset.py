@@ -1,8 +1,8 @@
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataset import random_split
 from torchvision import transforms
-import pandas as pd
 import numpy as np
+import pandas as pd
 import torch
 import os
 # from sklearn import preprocessing
@@ -50,7 +50,6 @@ class PlaceTimeDataset(Dataset):
         image = io.imread(img_name) 
         # image = Image.open(img_name).convert('RGB')  
 
-        
         '''
         ### One hot encoding for categorical variables###
         # month = self.df.month[idx]
@@ -76,7 +75,9 @@ class PlaceTimeDataset(Dataset):
         location = np.eye(139)[self.df.location.tolist()]
         month = np.eye(12)[self.df.month.tolist()]
         hour = np.eye(24)[self.df.hour.tolist()]
-            
+        
+        features = np.concatenate((month[idx], hour[idx], location[idx]), axis=0)
+        
         try:
             if self.transform:
                 if len(image.shape) == 2:  ## validation on number of channels
@@ -88,8 +89,7 @@ class PlaceTimeDataset(Dataset):
         except Exception as e:
             print(f'Exception raised during image transformation due to: {e}')        
         
-        sample = {'image': image, 'month': month[idx], 'hour': hour[idx], 'location': location[idx], 'label': label}
-
+        sample = {'image': image, 'features': features, 'label': label}
         return sample           
 
            
@@ -183,7 +183,7 @@ def get_train_valid_dataset():
     dataloader = DataLoader(train_set, batch_size=10, shuffle=True, num_workers=6)   
 
     for i_batch, sample_batched in enumerate(dataloader):
-        print(i_batch, sample_batched['image'].shape, sample_batched['location'].shape, sample_batched['month'].shape, sample_batched['hour'].shape, sample_batched['label'])
+        print(i_batch, sample_batched['image'].shape, sample_batched['features'].shape, sample_batched['label'])
         if i_batch == 10:
             break
     '''

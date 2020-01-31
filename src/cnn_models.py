@@ -5,7 +5,7 @@ import torch
 
 class FirstModel(nn.Module):
     """Some Information about FirstModel"""
-    def __init__(self, features_size=175, weights=None):
+    def __init__(self, features_size, weights):
         super (FirstModel, self).__init__()
         self.resnet = models.resnet152(pretrained=False)
         if weights:
