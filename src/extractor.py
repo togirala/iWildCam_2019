@@ -6,7 +6,12 @@ import os
 
 import pandas as pd
 import numpy as np
+import torch
 
+
+
+train_dir = 'data/'
+test_dir = 'data/'
 
 def get_data():
     try:
@@ -48,17 +53,40 @@ test_df = get_time_df(test_df)
 
 
 
+from torchvision import models
+import torch.nn.functional as F
+import torch.optim as optim
+import torch.nn as nn
+import torch
+
+
+class SimpleConv(nn.Module):
+    def __init__(self, num_categories, len_dense, weighs=None):
+        super(SimpleConv, self).__init__()
+        self.model_conv = models.resnet152(pretrained=False)
+        if weighs:
+            self.model_conv.load_state_dict(torch.load(weighs))
+        self.model_conv.fc = nn.Linear(self.model_conv.fc.in_features, num_categories)
+        self.model_dense = nn.Linear(len_dense, num_categories)
+        self.model = nn.Linear(2*num_categories, num_categories)
+    
+    def forward(self, x, y):
+        x1 = self.model_conv(x)
+        x2 = self.model_dense(y)
+        x = F.relu(torch.cat((x1, x2), 1))
+        return self.model(x)
 
 
 
-'''
 
 
 
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-simple_conv = SimpleConv(23, 12+24, '../input/resnet152/resnet152.pth')
+# simple_conv = SimpleConv(23, 12+24, '../input/resnet152/resnet152.pth')
+simple_conv = SimpleConv(23, 12+24)
+
 simple_conv = simple_conv.to(device)
 
 
@@ -77,6 +105,7 @@ class SimpleDataset(Dataset):
         month = np.eye(12)[df.month.tolist()]
         hours = np.eye(24)[df.hour.tolist()]
         self.time = np.concatenate((month, hours), axis=1)
+        print(self.time.shape)
     
     def __len__(self):
         return len(self.df)
@@ -127,8 +156,8 @@ data_transforms = {
 
 ####################
 
-train_ds = SimpleDataset(os.path.join(train_dir, 'train_images'), train_df, n_category=23, transform=data_transforms['train'])
-test_ds = SimpleDataset(os.path.join(train_dir, 'test_images'), test_df, n_category=23, transform=data_transforms['test'])
+train_ds = SimpleDataset(os.path.join(train_dir, 'train'), train_df, n_category=23, transform=data_transforms['train'])
+test_ds = SimpleDataset(os.path.join(train_dir, 'test'), test_df, n_category=23, transform=data_transforms['test'])
 
 
 
@@ -162,6 +191,17 @@ train_sampler = SubsetRandomSampler(train_indices)
 test_loader = torch.utils.data.DataLoader(test_ds, batch_size=512)
 
 
+
+for i_step, (x1, x2, y, _) in enumerate(train_loader):
+    print(x1)
+
+
+
+
+
+
+
+'''
 
 
 ##################################
