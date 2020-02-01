@@ -53,8 +53,8 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             
-            if batch_idx % 500 == 0:
-                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {100*correct/total}')
+            # if batch_idx % 500 == 0:
+            print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {100*correct/total}')
             
         training_loss_epoch = running_loss / batch_idx
         print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {100*correct/total}')
@@ -128,7 +128,7 @@ def train():
     
     
     model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = loss_fn()
     
     
