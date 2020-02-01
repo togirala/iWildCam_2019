@@ -53,17 +53,17 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             
-            # if batch_idx % 500 == 0:
-            print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {100*correct/total}')
+            if batch_idx % 10 == 0:
+                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {100*correct/total}')
             
         training_loss_epoch = running_loss / batch_idx
-        print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {100*correct/total}')
+        print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {100*correct/total}%')
         
         eval_loop(model = model, 
                   valid_loader = valid_loader,
                   device = device) 
 
-    torch.save(model.state_dict(), 'models/FirstModel.pth')    
+    torch.save(model.state_dict(), 'models/FirstModel-resnet50.pth')    
 
     
 
@@ -123,11 +123,14 @@ def train():
     
     ###  Import Dataset ###
     train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=128, shuffle=True)
     valid_loader = DataLoader(valid_set, batch_size=100, shuffle=True) 
     
     
-    model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')
+    # model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')  ## resnet152
+    model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet50-19c8e357.pth') ## resnet50
+    # model = cnn_models.FirstModel(features_size = 175, weights = 'models/densenet121-a639ec97.pth')  ## densenet121
+    
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = loss_fn()
     
