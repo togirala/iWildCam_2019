@@ -53,6 +53,9 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             
+            if batch_idx % 500 == 0:
+                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {100*correct/total}')
+            
         training_loss_epoch = running_loss / batch_idx
         print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {100*correct/total}')
         
@@ -120,7 +123,7 @@ def train():
     
     ###  Import Dataset ###
     train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=40, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
     valid_loader = DataLoader(valid_set, batch_size=100, shuffle=True) 
     
     

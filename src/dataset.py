@@ -154,10 +154,11 @@ class ToTensor(object):
 
 def get_train_valid_dataset():
         
+    ### Data Transformations ###
     data_transforms = {
         'train': transforms.Compose([
             transforms.ToPILImage(mode = 'RGB'),
-            transforms.Resize((256)),    ### for optimiuzation
+            transforms.Resize((256, 351)),    ### for optimiuzation
             # transforms.Resize((600, 822)),    ##  good resolution images
             # transforms.RandomSizedCrop(224),
             transforms.RandomHorizontalFlip(),
