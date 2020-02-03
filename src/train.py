@@ -20,20 +20,17 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
         running_loss = 0.0
         correct = 0
         total = 0
+        start_time = 0
         
         for batch_idx, training_batch in enumerate(train_loader):
             '''### data in form sample = {'image': image, 'features': features, 'label': label} ###'''
             
-            start_time = time.time()
+            # start_time = time.time()
             
-            image = training_batch['image']
-            features = training_batch['features']
-            labels = training_batch['label']
+            image = training_batch['image'].to(device)
+            features = training_batch['features'].to(device)
+            labels = training_batch['label'].to(device)
             
-            image = image.to(device)
-            features = features.to(device)
-            labels = labels.to(device)
-            # model = model.to(device)
                         
             ### Zero the parameter gradients
             optimizer.zero_grad()
@@ -58,10 +55,11 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
             correct += (predicted == labels).sum().item()
             
             if batch_idx % 10 == 0:
-                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {100*correct/total}%, batch training time: {time.time() - start_time}')
+                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {round(100*correct/total, 2)}%, time: {time.time() - start_time}')
+                start_time = time.time()
             
         training_loss_epoch = running_loss / batch_idx
-        print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {100*correct/total}%')
+        print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {round(100*correct/total, 2)}%')
         
         eval_loop(model = model, 
                   valid_loader = valid_loader,
@@ -127,8 +125,8 @@ def train():
     
     ###  Import Dataset ###
     train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=384, shuffle=True, num_workers=6)
-    valid_loader = DataLoader(valid_set, batch_size=512, shuffle=True, num_workers=6) 
+    train_loader = DataLoader(train_set, batch_size=360, shuffle=True, num_workers=6)
+    valid_loader = DataLoader(valid_set, batch_size=360, shuffle=True, num_workers=6) 
     
     # model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')  ## resnet152
     # model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet50-19c8e357.pth') ## resnet50
@@ -146,7 +144,7 @@ def train():
             train_loader = train_loader, 
             valid_loader = valid_loader, 
             device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'), 
-            epochs = 5
+            epochs = 10
             )
 
 
