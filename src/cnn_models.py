@@ -17,7 +17,9 @@ class FirstModel(nn.Module):
         super (FirstModel, self).__init__()
         
         # self.resnet = models.resnet152(pretrained=False)
-        self.resnet = models.resnet50(pretrained=False)
+        # self.resnet = models.resnet50(pretrained=False)
+        self.resnet = models.resnet18(pretrained=False)
+        
         # self.resnet = models.densenet121(pretrained=False)
         
         if weights:
