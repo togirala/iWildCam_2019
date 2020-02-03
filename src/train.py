@@ -67,7 +67,7 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
                   valid_loader = valid_loader,
                   device = device) 
 
-    torch.save(model.state_dict(), 'models/FirstModel-resnet50.pth')    
+    torch.save(model.state_dict(), 'models/FirstModel-resnet18.pth')    
 
     
 
