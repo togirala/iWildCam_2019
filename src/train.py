@@ -20,18 +20,18 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
         running_loss = 0.0
         correct = 0
         total = 0
-        start_time = 0
+        epoch_time = time.time()
+        batch_time = time.time()   ### Evaluated for every 10 batches
         
         for batch_idx, training_batch in enumerate(train_loader):
             '''### data in form sample = {'image': image, 'features': features, 'label': label} ###'''
             
-            # start_time = time.time()
+            # batch_time = time.time()
             
             image = training_batch['image'].to(device)
             features = training_batch['features'].to(device)
             labels = training_batch['label'].to(device)
-            
-                        
+          
             ### Zero the parameter gradients
             optimizer.zero_grad()
             
@@ -55,11 +55,16 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
             correct += (predicted == labels).sum().item()
             
             if batch_idx % 10 == 0:
-                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {round(100*correct/total, 2)}%, time: {time.time() - start_time}')
-                start_time = time.time()
+                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy (batch: {batch_idx}): {round(100*correct/total, 2)}%, batch time(10 batches): {round(time.time() - batch_time, 2)}')
+                batch_time = time.time()    
+        
+        if batch_idx > 0:    
+            training_loss_epoch = running_loss / batch_idx
+            ## Actually (batch_idx + 1) as enumerate() starts batch_idx from 0... But its okay for now... I guess
+        else:
+            training_loss_epoch = running_loss
             
-        training_loss_epoch = running_loss / batch_idx
-        print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {round(100*correct/total, 2)}%')
+        print(f'training_loss_epoch = {training_loss_epoch}, training accuracy (epoch: {epoch}) = {round(100*correct/total, 2)}%, epoch time: {round(time.time() - epoch_time, 2)}')
         
         eval_loop(model = model, 
                   valid_loader = valid_loader,
@@ -67,7 +72,6 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
 
     torch.save(model.state_dict(), 'models/FirstModel-resnet18.pth')    
 
-    
 
 def eval_loop(model, valid_loader, device):
     
@@ -87,16 +91,13 @@ def eval_loop(model, valid_loader, device):
         # It will reduce memory usage and speed up computations but you won’t be able to backprop (which you don’t want in an eval script)
         # '''
             
-            image = validation_batch['image']
-            features = validation_batch['features']
-            labels = validation_batch['label']
+            image = validation_batch['image'].to(device)
+            features = validation_batch['features'].to(device)
+            labels = validation_batch['label'].to(device)
             
-            image = image.to(device)
-            features = features.to(device)
-            labels = labels.to(device)
             model = model.to(device)
             
-            preds = model(image, features)
+            preds = model(image.type(torch.float), features.type(torch.float))
             
             _, predicted = torch.max(preds.data, 1)
             total += labels.size(0)
