@@ -4,13 +4,14 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
+import time
 
 import dataset
 import cnn_models
 
 
 def loss_fn():
-    return nn.CrossEntropyLoss()
+    return nn.CrossEntropyLoss().cuda() if torch.cuda.is_available() else nn.CrossEntropyLoss()
 
 def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, epochs):
     model.train()
@@ -19,23 +20,22 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
         running_loss = 0.0
         correct = 0
         total = 0
+        epoch_time = time.time()
+        batch_time = time.time()   ### Evaluated for every 10 batches
         
         for batch_idx, training_batch in enumerate(train_loader):
             '''### data in form sample = {'image': image, 'features': features, 'label': label} ###'''
-            image = training_batch['image']
-            features = training_batch['features']
-            labels = training_batch['label']
             
-            image = image.to(device)
-            features = features.to(device)
-            labels = labels.to(device)
-            model = model.to(device)
-                        
+            # batch_time = time.time()            
+            image = training_batch['image'].to(device)
+            features = training_batch['features'].to(device)
+            labels = training_batch['label'].to(device)
+          
             ### Zero the parameter gradients
             optimizer.zero_grad()
             
             ### Make predictions based on models
-            preds = model(image.type(torch.float32), features.type(torch.float32))
+            preds = model(image.type(torch.float), features.type(torch.float))
             
             ### Compute loss based on y_hat and y
             loss = criterion(preds, labels)
@@ -53,19 +53,25 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             
-            if batch_idx % 500 == 0:
-                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy: {100*correct/total}')
+            if batch_idx % 10 == 0:
+                print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy (batch: {batch_idx}): {round(100*correct/total, 2)}%, batch time(10 batches): {round(time.time() - batch_time, 2)}')
+                batch_time = time.time()    
+
+        
+        if batch_idx > 0:    
+            training_loss_epoch = running_loss / batch_idx
+            ## Actually (batch_idx + 1) as enumerate() starts batch_idx from 0... But its okay for now... I guess
+        else:
+            training_loss_epoch = running_loss
             
-        training_loss_epoch = running_loss / batch_idx
-        print(f'training_loss_epoch = {training_loss_epoch}, validation accuracy = {100*correct/total}')
+        print(f'training_loss_epoch = {round(training_loss_epoch, 2)}, training accuracy (epoch: {epoch}) = {round(100*correct/total, 2)}%, epoch time: {round(time.time() - epoch_time, 2)}')
         
         eval_loop(model = model, 
                   valid_loader = valid_loader,
                   device = device) 
 
-    torch.save(model.state_dict(), 'models/FirstModel.pth')    
+    torch.save(model.state_dict(), 'target/FirstModel-resnet18-2.pth')    
 
-    
 
 def eval_loop(model, valid_loader, device):
     
@@ -77,7 +83,6 @@ def eval_loop(model, valid_loader, device):
     # Validation loop
     for batch_idx, validation_batch in enumerate(valid_loader): 
     # ''' ### data in form sample = {'image': image, 'features': features, 'label': label} ### ''' 
-   
         
         with torch.no_grad():
         # '''
@@ -85,16 +90,13 @@ def eval_loop(model, valid_loader, device):
         # It will reduce memory usage and speed up computations but you won’t be able to backprop (which you don’t want in an eval script)
         # '''
             
-            image = validation_batch['image']
-            features = validation_batch['features']
-            labels = validation_batch['label']
+            image = validation_batch['image'].to(device)
+            features = validation_batch['features'].to(device)
+            labels = validation_batch['label'].to(device)
             
-            image = image.to(device)
-            features = features.to(device)
-            labels = labels.to(device)
-            model = model.to(device)
+            # model = model.to(device)
             
-            preds = model(image, features)
+            preds = model(image.type(torch.float), features.type(torch.float))
             
             _, predicted = torch.max(preds.data, 1)
             total += labels.size(0)
@@ -103,8 +105,9 @@ def eval_loop(model, valid_loader, device):
             # val_pred = np.append(val_pred, self.get_vector(y_pred.detach().cpu().numpy()))
             # loss = loss_fn(preds, self.get_vector(y_batch))
             # avg_val_loss += loss.item() / len(val_loader)
-            
-    print(f'validation accuracy = {100*correct/total}')
+        
+
+    print(f'validation accuracy = {round(100*correct/total, 2)}')
 
     ##### Model Checkpoint for best validation f1
     # val_f1 = self.calculate_metrics(train_targets[val_index], val_pred, f1_only=True)
@@ -123,14 +126,18 @@ def train():
     
     ###  Import Dataset ###
     train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
-    valid_loader = DataLoader(valid_set, batch_size=100, shuffle=True) 
+    train_loader = DataLoader(train_set, batch_size=360, shuffle=True, num_workers=12)
+    valid_loader = DataLoader(valid_set, batch_size=360, shuffle=True, num_workers=12) 
     
+    # model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')  ## resnet152
+    # model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet50-19c8e357.pth') ## resnet50
+    # model = cnn_models.FirstModel(features_size = 175, weights = 'models/densenet121-a639ec97.pth')  ## densenet121
+    model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet18-5c106cde.pth')  ## resnet18
+    model = model.to(device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
+    model = nn.DataParallel(model)
     
-    model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = loss_fn()
-    
     
     train_loop(
             model = model, 
@@ -138,11 +145,9 @@ def train():
             criterion = criterion, 
             train_loader = train_loader, 
             valid_loader = valid_loader, 
-            device = 'cuda', 
-            epochs = 5
+            device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'), 
+            epochs = 10
             )
-    
-
 
 
 
