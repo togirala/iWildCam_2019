@@ -70,7 +70,7 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
                   valid_loader = valid_loader,
                   device = device) 
 
-    torch.save(model.state_dict(), 'models/FirstModel-resnet18.pth')    
+    torch.save(model.state_dict(), 'target/FirstModel-resnet18-2.pth')    
 
 
 def eval_loop(model, valid_loader, device):
@@ -146,7 +146,7 @@ def train():
             train_loader = train_loader, 
             valid_loader = valid_loader, 
             device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'), 
-            epochs = 5
+            epochs = 10
             )
 
 
