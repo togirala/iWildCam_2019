@@ -26,8 +26,7 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
         for batch_idx, training_batch in enumerate(train_loader):
             '''### data in form sample = {'image': image, 'features': features, 'label': label} ###'''
             
-            # batch_time = time.time()
-            
+            # batch_time = time.time()            
             image = training_batch['image'].to(device)
             features = training_batch['features'].to(device)
             labels = training_batch['label'].to(device)
@@ -57,6 +56,7 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
             if batch_idx % 10 == 0:
                 print(f'epoch: {epoch}, training batch: {batch_idx}, training accuracy (batch: {batch_idx}): {round(100*correct/total, 2)}%, batch time(10 batches): {round(time.time() - batch_time, 2)}')
                 batch_time = time.time()    
+
         
         if batch_idx > 0:    
             training_loss_epoch = running_loss / batch_idx
@@ -64,7 +64,7 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
         else:
             training_loss_epoch = running_loss
             
-        print(f'training_loss_epoch = {training_loss_epoch}, training accuracy (epoch: {epoch}) = {round(100*correct/total, 2)}%, epoch time: {round(time.time() - epoch_time, 2)}')
+        print(f'training_loss_epoch = {round(training_loss_epoch, 2)}, training accuracy (epoch: {epoch}) = {round(100*correct/total, 2)}%, epoch time: {round(time.time() - epoch_time, 2)}')
         
         eval_loop(model = model, 
                   valid_loader = valid_loader,
@@ -83,7 +83,6 @@ def eval_loop(model, valid_loader, device):
     # Validation loop
     for batch_idx, validation_batch in enumerate(valid_loader): 
     # ''' ### data in form sample = {'image': image, 'features': features, 'label': label} ### ''' 
-   
         
         with torch.no_grad():
         # '''
@@ -95,7 +94,7 @@ def eval_loop(model, valid_loader, device):
             features = validation_batch['features'].to(device)
             labels = validation_batch['label'].to(device)
             
-            model = model.to(device)
+            # model = model.to(device)
             
             preds = model(image.type(torch.float), features.type(torch.float))
             
@@ -106,8 +105,9 @@ def eval_loop(model, valid_loader, device):
             # val_pred = np.append(val_pred, self.get_vector(y_pred.detach().cpu().numpy()))
             # loss = loss_fn(preds, self.get_vector(y_batch))
             # avg_val_loss += loss.item() / len(val_loader)
-            
-    print(f'validation accuracy = {100*correct/total}')
+        
+
+    print(f'validation accuracy = {round(100*correct/total, 2)}')
 
     ##### Model Checkpoint for best validation f1
     # val_f1 = self.calculate_metrics(train_targets[val_index], val_pred, f1_only=True)
@@ -126,14 +126,15 @@ def train():
     
     ###  Import Dataset ###
     train_set, valid_set = dataset.get_train_valid_dataset()
-    train_loader = DataLoader(train_set, batch_size=360, shuffle=True, num_workers=6)
-    valid_loader = DataLoader(valid_set, batch_size=360, shuffle=True, num_workers=6) 
+    train_loader = DataLoader(train_set, batch_size=360, shuffle=True, num_workers=12)
+    valid_loader = DataLoader(valid_set, batch_size=360, shuffle=True, num_workers=12) 
     
     # model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet152-b121ed2d.pth')  ## resnet152
     # model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet50-19c8e357.pth') ## resnet50
     # model = cnn_models.FirstModel(features_size = 175, weights = 'models/densenet121-a639ec97.pth')  ## densenet121
     model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet18-5c106cde.pth')  ## resnet18
     model = model.to(device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
+    model = nn.DataParallel(model)
     
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = loss_fn()
@@ -145,7 +146,7 @@ def train():
             train_loader = train_loader, 
             valid_loader = valid_loader, 
             device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'), 
-            epochs = 10
+            epochs = 5
             )
 
 
