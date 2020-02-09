@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
+import torch.nn as nn
 
 import dataset
 import cnn_models
@@ -12,13 +13,14 @@ def predict():
 
     ###  Import Dataset ###
     test_set = dataset.get_test_dataset()
-    test_loader = DataLoader(test_set, batch_size=2, shuffle=True, num_workers=2)
+    test_loader = DataLoader(test_set, batch_size=360, shuffle=True, num_workers=12)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = cnn_models.FirstModel(features_size = 175, weights = 'models/resnet18-5c106cde.pth')
-    state_dict = torch.load('target/FirstModel-resnet18-1.pth', map_location='cpu')
+    state_dict = torch.load('target/FirstModel-resnet18-1.pth')
     model.load_state_dict(state_dict, strict=False)
+    model = nn.DataParallel(model)
     model.eval()
 
     image_ids = list()
@@ -41,6 +43,7 @@ def predict():
             preds = model(image.type(torch.float), features.type(torch.float))
             _, predicted = torch.max(preds.data, 1)
             predictions += predicted.tolist()
+
 
     predictions_df = pd.DataFrame()
     predictions_df['Id'] = image_ids
