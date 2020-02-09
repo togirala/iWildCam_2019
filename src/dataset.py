@@ -38,14 +38,20 @@ class PlaceTimeDataset(Dataset):
             idx = idx.tolist()
 
         self.df['date_time'] = pd.to_datetime(self.df['date_captured'], errors='coerce')
-        self.df["month"] = self.df['date_time'].dt.month - 1
-        self.df["hour"] = self.df['date_time'].dt.hour
+        self.df['month'] = self.df['date_time'].dt.month - 1
+        self.df['hour'] = self.df['date_time'].dt.hour
 
         self.df.loc[np.isfinite(self.df['hour']) == False, ['month', 'hour']] = 0
         self.df['hour'] = self.df['hour'].astype(int)
         self.df['month'] = self.df['month'].astype(int)  
 
-        label = self.df.category_id[idx]
+        # if len(self.df.category_id):    ## Train data  
+        if len(self.df.get('category_id', [])):    ## Train data  
+            label = self.df.category_id[idx]
+        else:   ## Test Data
+            label = 0
+
+        image_id = self.df.id[idx]
         img_name = os.path.join(self.root_dir, self.df.file_name[idx])
         image = io.imread(img_name) 
         # image = Image.open(img_name).convert('RGB')  
@@ -89,7 +95,7 @@ class PlaceTimeDataset(Dataset):
         except Exception as e:
             print(f'Exception raised during image transformation due to: {e}')        
         
-        sample = {'image': image, 'features': features, 'label': label}
+        sample = {'image': image, 'features': features, 'label': label, 'image_id': image_id}
         return sample           
 
            
@@ -194,5 +200,32 @@ def get_train_valid_dataset():
        
 
 
+def get_test_dataset():
+        
+    ### Data Transformations ###
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.ToPILImage(mode = 'RGB'),
+            transforms.Resize((256, 351)),    ### for optimiuzation
+            # transforms.Resize((600, 822)),    ##  good resolution images
+            # transforms.RandomSizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(20),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ]),
+        'test': transforms.Compose([
+            transforms.ToPILImage(mode = 'RGB'),
+            transforms.Resize((256, 351)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+    }
+
+    test_set = PlaceTimeDataset(csv_file='data/test.csv', root_dir='data/test/', transform=data_transforms['test'])
+    
+    return test_set
+
+
+
 # if __name__ == '__main__':
-#     get_train_valid_dataset()

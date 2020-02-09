@@ -24,7 +24,7 @@ def train_loop(model, optimizer, criterion, train_loader, valid_loader, device, 
         batch_time = time.time()   ### Evaluated for every 10 batches
         
         for batch_idx, training_batch in enumerate(train_loader):
-            '''### data in form sample = {'image': image, 'features': features, 'label': label} ###'''
+            '''### data in form sample = {'image': image, 'features': features, 'label': label, 'image_id': image_id} ###'''
             
             # batch_time = time.time()            
             image = training_batch['image'].to(device)
@@ -80,15 +80,16 @@ def eval_loop(model, valid_loader, device):
     correct = 0
     total = 0
         
-    # Validation loop
-    for batch_idx, validation_batch in enumerate(valid_loader): 
-    # ''' ### data in form sample = {'image': image, 'features': features, 'label': label} ### ''' 
-        
-        with torch.no_grad():
-        # '''
-        # torch.no_grad() impacts the autograd engine and deactivate it. 
-        # It will reduce memory usage and speed up computations but you won’t be able to backprop (which you don’t want in an eval script)
-        # '''
+
+    with torch.no_grad():
+    # '''
+    # torch.no_grad() impacts the autograd engine and deactivate it. 
+    # It will reduce memory usage and speed up computations but you won’t be able to backprop (which you don’t want in an eval script)
+    # '''
+
+        # Validation loop
+        for batch_idx, validation_batch in enumerate(valid_loader): 
+        # ''' ### data in form sample = {'image': image, 'features': features, 'label': label, 'image_id': image_id} ### ''' 
             
             image = validation_batch['image'].to(device)
             features = validation_batch['features'].to(device)
